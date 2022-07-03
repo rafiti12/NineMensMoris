@@ -1,6 +1,8 @@
 import pygame
 from constants import *
 from Tile import Tile
+import math
+import copy
 
 
 def initiate():
@@ -61,11 +63,51 @@ def test_phase1():
     while not crashed:
         mouse = pygame.mouse.get_pos()
 
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 crashed = True
                 pygame.quit()
                 quit()
+        
+
+            if curr_player == 1:
+                temp_tiles = None
+                temp_tiles = copy.deepcopy(tiles)
+                best_score = -math.inf
+                moves = generate_possible_moves_phase1(tiles, current_move, Owner.RED)
+                
+                for m in moves:
+                    if current_move == Move.PLACE:
+                        temp_tiles[m].owner = Owner.RED
+                    elif current_move == Move.TAKE:
+                        temp_tiles[m].owner = Owner.NONE
+                    score = -minimax_phase1(temp_tiles, 4, -math.inf, math.inf, current_move, True)
+                    if current_move == Move.PLACE:
+                        temp_tiles[m].owner = Owner.NONE
+                    elif current_move == Move.TAKE:
+                        temp_tiles[m].owner = Owner.RED
+                    #print(score)
+                    if score > best_score:
+                        best_score = score
+                        best_move = m
+                #print("--------------------")
+                if current_move == Move.PLACE:
+                    tiles[best_move].owner = Owner.RED
+                elif current_move == Move.TAKE:
+                    tiles[best_move].owner = Owner.NONE
+
+                if current_move == Move.PLACE:
+                    tiles_to_place -= 1
+                    if tiles[best_move].checkForMill(tiles) and checkTakePossible(tiles, Owner.RED):
+                        current_move = Move.TAKE
+                        break
+                elif current_move == Move.TAKE:
+                    black_tiles -= 1
+                    current_move = Move.PLACE
+                
+                curr_player = 0
+ 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for t in tiles:
                     if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
@@ -104,6 +146,7 @@ def test_phase1():
         if tiles_to_place == 0 and current_move != Move.TAKE:
             phase = 2
             break
+
         display_all(selected, "Phase I")
         pygame.display.update()
         clock.tick(60)
@@ -219,6 +262,111 @@ def checkTakePossible(tiles, owner):
                 return True
 
     return False
+
+
+def evaluate_phase1(_tiles, player):
+    ai = Owner.RED
+    ai_mill_points = 250
+    player_mill_points = 300
+    ai_possible_mill_points = 60
+    player_possible_mill_points = 80
+
+    score = 0
+
+    # red = 0
+    # black = 0
+
+    for t in _tiles:
+    #     if t.owner == Owner.RED:
+    #         red += 1
+    #     else:
+    #         black += 1
+    
+    # return  black - red
+        if t.checkForMill(_tiles) and t.owner == player:
+            if player == ai:
+                score += ai_mill_points
+            else:
+                score += player_mill_points
+
+        possible_mills = t.countPossibleMills(_tiles)
+        if possible_mills > 0 and t.owner == player:
+            if player == ai:
+                score += ai_possible_mill_points * possible_mills
+            else:
+                score += player_possible_mill_points * possible_mills
+
+        if t.owner == ai:
+            score += 1
+
+    return score
+
+
+def generate_possible_moves_phase1(_tiles, move, player):
+    possible_moves = []
+
+    if move == Move.PLACE:
+        for t in _tiles:
+            if t.owner == Owner.NONE:
+                possible_moves.append(t.INDEX)   
+    else:
+        for t in _tiles:
+            if t.owner != Owner.NONE and t.owner != player and not t.checkForMill(_tiles):
+                possible_moves.append(t.INDEX)
+        pass
+    
+    return possible_moves
+
+
+# minimax with alpha-beta pruning
+def minimax_phase1(_tiles, depth, alpha, beta, move, maximizing):
+    if depth == 0:
+        return evaluate_phase1(_tiles, (Owner.RED, Owner.BLACK)[maximizing])
+
+    if maximizing:
+        max_eval = -math.inf
+        moves = generate_possible_moves_phase1(_tiles, move, Owner.RED)
+        for m in moves:
+            if move == Move.PLACE:
+                _tiles[m].owner = Owner.RED
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.NONE
+            eval = -minimax_phase1(_tiles, depth - 1, alpha, beta, move, False)
+            if move == Move.PLACE:
+                _tiles[m].owner = Owner.NONE
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.RED
+
+            max_eval = max(eval, max_eval)
+
+            alpha = max(alpha, eval)
+
+            if beta <= alpha:
+                break
+
+        return max_eval
+    else: 
+        min_eval = math.inf
+        moves = generate_possible_moves_phase1(_tiles, move, Owner.BLACK)
+        for m in moves:
+            if move == Move.PLACE:
+                _tiles[m].owner = Owner.BLACK
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.NONE
+            eval = minimax_phase1(_tiles, depth - 1, alpha, beta, move, True)
+            if move == Move.PLACE:
+                _tiles[m].owner = Owner.NONE
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.BLACK
+
+            min_eval = min(eval, min_eval)
+
+            beta = min(beta, eval)
+
+            if beta <= alpha:
+                break
+
+        return min_eval
 
 def addMills(i):
     t = []
@@ -338,11 +486,11 @@ def addNeighbors(i):
         t.append(3)
         t.append(9)
         t.append(11)
-        t.append(17)
+        t.append(18)
     elif i == 11:
         t.append(6)
         t.append(10)
-        t.append(18)
+        t.append(15)
     elif i == 12:
         t.append(8)
         t.append(13)
@@ -390,6 +538,7 @@ def addNeighbors(i):
 
     return t
 
+        
 
 initiate()
 test_phase1()

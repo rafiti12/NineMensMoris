@@ -1,3 +1,4 @@
+from json import tool
 from constants import *
 
 
@@ -19,6 +20,16 @@ class Tile:
             if self.owner == tiles[m[0]].owner and self.owner == tiles[m[1]].owner:
                 return True
         return False
+    
+    def countPossibleMills(self, tiles):
+        possible_mills = 0
+        for m in self.MILLS:
+            if tiles[m[0]].owner == self.owner and tiles[m[1]].owner == Owner.NONE:
+                possible_mills += 1
+            elif tiles[m[0]].owner == Owner.NONE and tiles[m[1]].owner == self.owner:
+                possible_mills += 1
+    
+        return possible_mills
 
     def checkForMove(self, index, tiles):
         for n in self.NEIGHBORS:

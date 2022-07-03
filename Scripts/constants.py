@@ -1,6 +1,6 @@
 from enum import Enum
 
-SCREEN_WIDTH =1200
+SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
 MARGIN = 50
 OFFSET = 10 # Do not change
