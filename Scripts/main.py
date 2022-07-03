@@ -53,7 +53,7 @@ def initiate():
     load_tiles()
 
 
-def test_phase1():
+def pve_phase1():
     global phase, black_tiles, red_tiles, tiles
     tiles_to_place = 18
     curr_player = 0
@@ -150,6 +150,67 @@ def test_phase1():
         display_all(selected, "Phase I")
         pygame.display.update()
         clock.tick(60)
+
+
+def pvp_phase1():
+    global phase, black_tiles, red_tiles, tiles
+    tiles_to_place = 18
+    curr_player = 0
+    current_move = Move.PLACE
+    crashed = False
+    selected = -1
+    while not crashed:
+        mouse = pygame.mouse.get_pos()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                crashed = True
+                pygame.quit()
+                quit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for t in tiles:
+                    if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
+                        1] - TILE_RADIUS <= mouse[1] <= t.POSITION[1] + TILE_RADIUS:
+                        if current_move == Move.PLACE:
+                            if t.owner == Owner.NONE:
+                                if curr_player == 0:
+                                    t.owner = Owner.BLACK
+                                else:
+                                    t.owner = Owner.RED
+                                tiles_to_place -= 1
+                                if t.checkForMill(tiles) and checkTakePossible(tiles, t.owner):
+                                    current_move = Move.TAKE
+                                    break
+                                if curr_player == 0:
+                                    curr_player = 1
+                                else:
+                                    curr_player = 0
+                                break
+                        else:
+                            if curr_player == 0:
+                                if t.owner == Owner.RED and not t.checkForMill(tiles):
+                                    t.owner = Owner.NONE
+                                    current_move = Move.PLACE
+                                    red_tiles -= 1
+                                    curr_player = 1
+                                    break
+                            else:
+                                if t.owner == Owner.BLACK and not t.checkForMill(tiles):
+                                    t.owner = Owner.NONE
+                                    current_move = Move.PLACE
+                                    black_tiles -= 1
+                                    curr_player = 0
+                                    break
+
+        if tiles_to_place == 0 and current_move != Move.TAKE:
+            phase = 2
+            break
+
+        display_all(selected, "Phase I")
+        pygame.display.update()
+        clock.tick(60)
+
 
 def test_phase2():
     global phase, black_tiles, red_tiles, tiles
@@ -541,7 +602,7 @@ def addNeighbors(i):
         
 
 initiate()
-test_phase1()
+pve_phase1()
 test_phase2()
 pygame.quit()
 quit()
