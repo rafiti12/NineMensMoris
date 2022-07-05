@@ -1,4 +1,6 @@
 import pygame
+import pygame_menu
+
 from constants import *
 from Tile import Tile
 import math
@@ -6,7 +8,6 @@ import copy
 
 
 def initiate():
-    pygame.init()
     global screen, clock, board, smallfont, phase, black_tiles, red_tiles, BOARD_X, BOARD_Y, TILES_POSITION
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
@@ -21,33 +22,52 @@ def initiate():
         BOARD_Y = MARGIN * 0.5
         TILES_POSITION = [(0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + OFFSET, SCREEN_HEIGHT - MARGIN + OFFSET),
                           (0.5 * SCREEN_WIDTH, SCREEN_HEIGHT - MARGIN + OFFSET),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - OFFSET + SCREEN_HEIGHT - MARGIN, SCREEN_HEIGHT - MARGIN + OFFSET),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1/6 * SCREEN_HEIGHT, SCREEN_HEIGHT - MARGIN + OFFSET - 1/6 * (SCREEN_HEIGHT - MARGIN)),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 2 * (SCREEN_HEIGHT - MARGIN), SCREEN_HEIGHT - MARGIN + OFFSET - 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
-                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 1/6 * SCREEN_HEIGHT, SCREEN_HEIGHT - MARGIN + OFFSET - 1/6 * (SCREEN_HEIGHT - MARGIN)),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 2/6 * (SCREEN_HEIGHT - MARGIN/2), SCREEN_HEIGHT - MARGIN + OFFSET - 2/6 * (SCREEN_HEIGHT - MARGIN)),
-                          (0.5 * SCREEN_WIDTH, SCREEN_HEIGHT - MARGIN + OFFSET - 2/6 * (SCREEN_HEIGHT - MARGIN)),
-                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 2/6 * (SCREEN_HEIGHT - MARGIN/2), SCREEN_HEIGHT - MARGIN + OFFSET - 2 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - OFFSET + SCREEN_HEIGHT - MARGIN,
+                           SCREEN_HEIGHT - MARGIN + OFFSET),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 6 * SCREEN_HEIGHT,
+                           SCREEN_HEIGHT - MARGIN + OFFSET - 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 2 * (SCREEN_HEIGHT - MARGIN),
+                           SCREEN_HEIGHT - MARGIN + OFFSET - 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 1 / 6 * SCREEN_HEIGHT,
+                           SCREEN_HEIGHT - MARGIN + OFFSET - 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 2 / 6 * (SCREEN_HEIGHT - MARGIN / 2),
+                           SCREEN_HEIGHT - MARGIN + OFFSET - 2 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (0.5 * SCREEN_WIDTH, SCREEN_HEIGHT - MARGIN + OFFSET - 2 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 2 / 6 * (
+                                  SCREEN_HEIGHT - MARGIN / 2),
+                           SCREEN_HEIGHT - MARGIN + OFFSET - 2 / 6 * (SCREEN_HEIGHT - MARGIN)),
                           (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + OFFSET, SCREEN_HEIGHT / 2),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1/6 * SCREEN_HEIGHT, SCREEN_HEIGHT / 2),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 2/6 * (SCREEN_HEIGHT - MARGIN/2), SCREEN_HEIGHT / 2),
-                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 2 / 6 * (SCREEN_HEIGHT - MARGIN / 2), SCREEN_HEIGHT / 2),
-                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 1/6 * SCREEN_HEIGHT, SCREEN_HEIGHT / 2),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - OFFSET + SCREEN_HEIGHT - MARGIN, SCREEN_HEIGHT / 2),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 2 / 6 * (SCREEN_HEIGHT - MARGIN / 2), SCREEN_HEIGHT - MARGIN/2 + OFFSET - 4 / 6 * (SCREEN_HEIGHT - MARGIN/2)),
-                          (0.5 * SCREEN_WIDTH, SCREEN_HEIGHT - MARGIN/2 + OFFSET - 4 / 6 * (SCREEN_HEIGHT - MARGIN/2)),
-                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 2 / 6 * (SCREEN_HEIGHT - MARGIN / 2), SCREEN_HEIGHT - MARGIN/2 + OFFSET - 4 / 6 * (SCREEN_HEIGHT - MARGIN/2)),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 6 * SCREEN_HEIGHT, MARGIN/2 + OFFSET + 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 2 * (SCREEN_HEIGHT - MARGIN), MARGIN/2 + OFFSET + 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
-                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 1 / 6 * SCREEN_HEIGHT, MARGIN/2 + OFFSET + 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 6 * SCREEN_HEIGHT, SCREEN_HEIGHT / 2),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 2 / 6 * (SCREEN_HEIGHT - MARGIN / 2),
+                           SCREEN_HEIGHT / 2),
+                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 2 / 6 * (
+                                  SCREEN_HEIGHT - MARGIN / 2), SCREEN_HEIGHT / 2),
+                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 1 / 6 * SCREEN_HEIGHT,
+                           SCREEN_HEIGHT / 2),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - OFFSET + SCREEN_HEIGHT - MARGIN,
+                           SCREEN_HEIGHT / 2),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 2 / 6 * (SCREEN_HEIGHT - MARGIN / 2),
+                           SCREEN_HEIGHT - MARGIN / 2 + OFFSET - 4 / 6 * (SCREEN_HEIGHT - MARGIN / 2)),
+                          (0.5 * SCREEN_WIDTH,
+                           SCREEN_HEIGHT - MARGIN / 2 + OFFSET - 4 / 6 * (SCREEN_HEIGHT - MARGIN / 2)),
+                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 2 / 6 * (
+                                  SCREEN_HEIGHT - MARGIN / 2),
+                           SCREEN_HEIGHT - MARGIN / 2 + OFFSET - 4 / 6 * (SCREEN_HEIGHT - MARGIN / 2)),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 6 * SCREEN_HEIGHT,
+                           MARGIN / 2 + OFFSET + 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + 1 / 2 * (SCREEN_HEIGHT - MARGIN),
+                           MARGIN / 2 + OFFSET + 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
+                          (SCREEN_WIDTH - 0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - 1 / 6 * SCREEN_HEIGHT,
+                           MARGIN / 2 + OFFSET + 1 / 6 * (SCREEN_HEIGHT - MARGIN)),
                           (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) + OFFSET, MARGIN * 0.5 + OFFSET),
                           (0.5 * SCREEN_WIDTH, MARGIN * 0.5 + OFFSET),
-                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - OFFSET + SCREEN_HEIGHT - MARGIN, MARGIN * 0.5 + OFFSET)]
+                          (0.5 * (SCREEN_WIDTH - SCREEN_HEIGHT + MARGIN) - OFFSET + SCREEN_HEIGHT - MARGIN,
+                           MARGIN * 0.5 + OFFSET)]
     else:
         board = pygame.transform.scale(board, (SCREEN_WIDTH - MARGIN, SCREEN_WIDTH - MARGIN))
         BOARD_X = MARGIN * 0.5
         BOARD_Y = 0.5 * (SCREEN_HEIGHT - SCREEN_WIDTH + MARGIN)
-        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         print("In progress.")
         TILES_POSITION = []
     load_tiles()
@@ -63,20 +83,18 @@ def pve_phase1():
     while not crashed:
         mouse = pygame.mouse.get_pos()
 
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 crashed = True
                 pygame.quit()
                 quit()
-        
 
             if curr_player == 1:
                 temp_tiles = None
                 temp_tiles = copy.deepcopy(tiles)
                 best_score = -math.inf
                 moves = generate_possible_moves_phase1(tiles, current_move, Owner.RED)
-                
+
                 for m in moves:
                     if current_move == Move.PLACE:
                         temp_tiles[m].owner = Owner.RED
@@ -87,11 +105,11 @@ def pve_phase1():
                         temp_tiles[m].owner = Owner.NONE
                     elif current_move == Move.TAKE:
                         temp_tiles[m].owner = Owner.RED
-                    #print(score)
+                    # print(score)
                     if score > best_score:
                         best_score = score
                         best_move = m
-                #print("--------------------")
+                # print("--------------------")
                 if current_move == Move.PLACE:
                     tiles[best_move].owner = Owner.RED
                 elif current_move == Move.TAKE:
@@ -105,9 +123,9 @@ def pve_phase1():
                 elif current_move == Move.TAKE:
                     black_tiles -= 1
                     current_move = Move.PLACE
-                
+
                 curr_player = 0
- 
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for t in tiles:
                     if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
@@ -227,7 +245,8 @@ def test_phase2():
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for t in tiles:
-                    if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[1] - TILE_RADIUS <= mouse[1] <= t.POSITION[1] + TILE_RADIUS:
+                    if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
+                        1] - TILE_RADIUS <= mouse[1] <= t.POSITION[1] + TILE_RADIUS:
                         if current_move == Move.MOVE1:
                             if t.owner == Owner.BLACK and curr_player == 0:
                                 selected_tile = t
@@ -287,6 +306,7 @@ def test_phase2():
         pygame.display.update()
         clock.tick(60)
 
+
 def load_tiles():
     global tiles
     tiles = []
@@ -299,11 +319,12 @@ def load_tiles():
         tiles[i].addNeighbors(addNeighbors(i))
         i += 1
 
+
 def display_all(selected_index, message):
     screen.fill(WHITE)
     screen.blit(board, (BOARD_X, BOARD_Y))
     phase_text = smallfont.render(message, True, BLACK)
-    text_rect = phase_text.get_rect(center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+    text_rect = phase_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
     screen.blit(phase_text, text_rect)
     for t in tiles:
         if t.owner == Owner.BLACK:
@@ -312,7 +333,8 @@ def display_all(selected_index, message):
             pygame.draw.circle(screen, RED, t.POSITION, TILE_RADIUS)
     if selected_index >= 0:
         pygame.draw.circle(screen, YELLOW, tiles[selected_index].POSITION, TILE_RADIUS)
-    #pygame.draw.circle(screen, RED, tiles[23].POSITION, TILE_RADIUS)
+    # pygame.draw.circle(screen, RED, tiles[23].POSITION, TILE_RADIUS)
+
 
 def checkTakePossible(tiles, owner):
     for t in tiles:
@@ -338,12 +360,12 @@ def evaluate_phase1(_tiles, player):
     # black = 0
 
     for t in _tiles:
-    #     if t.owner == Owner.RED:
-    #         red += 1
-    #     else:
-    #         black += 1
-    
-    # return  black - red
+        #     if t.owner == Owner.RED:
+        #         red += 1
+        #     else:
+        #         black += 1
+
+        # return  black - red
         if t.checkForMill(_tiles) and t.owner == player:
             if player == ai:
                 score += ai_mill_points
@@ -369,13 +391,13 @@ def generate_possible_moves_phase1(_tiles, move, player):
     if move == Move.PLACE:
         for t in _tiles:
             if t.owner == Owner.NONE:
-                possible_moves.append(t.INDEX)   
+                possible_moves.append(t.INDEX)
     else:
         for t in _tiles:
             if t.owner != Owner.NONE and t.owner != player and not t.checkForMill(_tiles):
                 possible_moves.append(t.INDEX)
         pass
-    
+
     return possible_moves
 
 
@@ -406,7 +428,7 @@ def minimax_phase1(_tiles, depth, alpha, beta, move, maximizing):
                 break
 
         return max_eval
-    else: 
+    else:
         min_eval = math.inf
         moves = generate_possible_moves_phase1(_tiles, move, Owner.BLACK)
         for m in moves:
@@ -428,6 +450,7 @@ def minimax_phase1(_tiles, depth, alpha, beta, move, maximizing):
                 break
 
         return min_eval
+
 
 def addMills(i):
     t = []
@@ -505,6 +528,7 @@ def addMills(i):
         t.append((2, 14))
 
     return t
+
 
 def addNeighbors(i):
     t = []
@@ -599,10 +623,30 @@ def addNeighbors(i):
 
     return t
 
-        
 
-initiate()
-pve_phase1()
-test_phase2()
+def startTheGamePVP():
+    initiate()
+    pvp_phase1()
+    test_phase2()
+
+
+def startTheGamePVE():
+    initiate()
+    pve_phase1()
+    test_phase2()
+
+
+def showMenu():
+    menu_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    menu = pygame_menu.Menu('NineMensMoris', SCREEN_WIDTH, SCREEN_HEIGHT,
+                            theme=pygame_menu.themes.THEME_BLUE)
+    menu.add.button('Start game PVP', startTheGamePVP)
+    menu.add.button('Start game PVE', startTheGamePVE)
+    menu.add.button('Quit', pygame_menu.events.EXIT)
+    menu.mainloop(menu_surface)
+
+
+pygame.init()
+showMenu()
 pygame.quit()
 quit()
