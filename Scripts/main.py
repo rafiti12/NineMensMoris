@@ -8,11 +8,15 @@ import copy
 
 
 def initiate():
-    global screen, clock, board, smallfont, phase, black_tiles, red_tiles, BOARD_X, BOARD_Y, TILES_POSITION
+    global screen, clock, board, smallfont, phase, black_tiles, red_tiles, BOARD_X, BOARD_Y, TILES_POSITION, PLAYER0, PLAYER1, PLAYER_CPU
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
     board = pygame.image.load('../board.png')
     smallfont = pygame.font.SysFont('Corbel', 60)
+    font = pygame.font.SysFont('ArialBlack', 26)
+    PLAYER0 = font.render("Player 1 round", True, (0, 0, 0))
+    PLAYER1 = font.render("Player 2 round", True, (0, 0, 0))
+    PLAYER_CPU = font.render("CPU round", True, (0, 0, 0))
     phase = 1
     black_tiles = 9
     red_tiles = 9
@@ -170,6 +174,7 @@ def pve_phase1():
             break
 
         display_all(selected, "Phase I")
+        printGameStatus(curr_player, True)
         pygame.display.update()
         clock.tick(60)
 
@@ -235,6 +240,7 @@ def pvp_phase1():
             break
 
         display_all(selected, "Phase I")
+        printGameStatus(curr_player, False)
         pygame.display.update()
         clock.tick(60)
 
@@ -317,6 +323,9 @@ def test_phase2():
             display_all(selected_index, "Win")
         else:
             display_all(selected_index, "Phase II")
+            # Jeśli z komputerem to True, jeśli z graczem False
+            printGameStatus(curr_player, True)
+
         pygame.display.update()
         clock.tick(60)
 
@@ -638,6 +647,18 @@ def addNeighbors(i):
     return t
 
 
+def printGameStatus(player, cpu):
+    global PLAYER0, PLAYER1, PLAYER_CPU
+    if player == 0:
+        screen.blit(PLAYER0, (SCREEN_WIDTH / 2 - 105, SCREEN_HEIGHT / 2 + 28))
+    elif player == 1 and not cpu:
+        screen.blit(PLAYER1, (SCREEN_WIDTH / 2 - 105, SCREEN_HEIGHT / 2 + 28))
+    elif player == 1 and cpu:
+        screen.blit(PLAYER_CPU, (SCREEN_WIDTH / 2 - 75, SCREEN_HEIGHT / 2 + 28))
+
+
+
+
 def startTheGamePVP():
     initiate()
     pvp_phase1()
@@ -660,7 +681,11 @@ def showMenu():
     menu.mainloop(menu_surface)
 
 
-pygame.init()
-showMenu()
+def init():
+    pygame.init()
+    showMenu()
+
+
+init()
 pygame.quit()
 quit()
