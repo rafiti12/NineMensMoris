@@ -89,6 +89,10 @@ def pve_phase1():
                 pygame.quit()
                 quit()
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                    showMenu()
+
             if curr_player == 1:
                 temp_tiles = None
                 temp_tiles = copy.deepcopy(tiles)
@@ -186,6 +190,11 @@ def pvp_phase1():
                 pygame.quit()
                 quit()
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                    crashed = True
+                    showMenu()
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for t in tiles:
                     if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
@@ -243,6 +252,11 @@ def test_phase2():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                    showMenu()
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for t in tiles:
                     if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
@@ -640,8 +654,8 @@ def showMenu():
     menu_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     menu = pygame_menu.Menu('NineMensMoris', SCREEN_WIDTH, SCREEN_HEIGHT,
                             theme=pygame_menu.themes.THEME_BLUE)
-    menu.add.button('Start game PVP', startTheGamePVP)
-    menu.add.button('Start game PVE', startTheGamePVE)
+    menu.add.button('Play vs Player', startTheGamePVP)
+    menu.add.button('Play vs Computer', startTheGamePVE)
     menu.add.button('Quit', pygame_menu.events.EXIT)
     menu.mainloop(menu_surface)
 
