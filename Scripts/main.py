@@ -245,6 +245,128 @@ def pvp_phase1():
         clock.tick(60)
 
 
+def pve_phase2():
+    global phase, black_tiles, red_tiles, tiles
+    current_move = Move.MOVE1
+    curr_player = 0
+    selected_index = -1
+    selected_tile = tiles[0]
+    crashed = False
+    while not crashed:
+        mouse = pygame.mouse.get_pos()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                    showMenu()
+
+            if curr_player == 1:
+                temp_tiles = copy.deepcopy(tiles)
+                best_score = -math.inf
+                moves = generate_possible_moves_phase2(tiles, current_move, Owner.RED)
+                for m in moves:
+                    if current_move == Move.MOVE1:
+                        temp_tiles[m.frm].owner = Owner.NONE
+                        temp_tiles[m.to].owner = Owner.RED
+                    elif current_move == Move.TAKE:
+                        temp_tiles[m].owner = Owner.NONE
+                    score = -minimax_phase2(temp_tiles, 4, -math.inf, math.inf, current_move, True)
+                    if current_move == Move.MOVE1:
+                        temp_tiles[m.frm].owner = Owner.RED
+                        temp_tiles[m.to].owner = Owner.NONE
+                    elif current_move == Move.TAKE:
+                        temp_tiles[m].owner = Owner.RED
+                    if score > best_score:
+                        best_score = score
+                        best_move = m
+                print(best_score)
+                print(best_move)
+                if current_move == Move.MOVE1:
+                    tiles[best_move.frm].owner = Owner.NONE
+                    tiles[best_move.to].owner = Owner.RED
+                elif current_move == Move.TAKE:
+                    tiles[best_move].owner = Owner.NONE
+
+                if current_move == Move.MOVE1:
+                    if tiles[best_move[1]].checkForMill(tiles) and checkTakePossible(tiles, Owner.RED):
+                        current_move = Move.TAKE
+                        break
+                elif current_move == Move.TAKE:
+                    black_tiles -= 1
+                    current_move = Move.MOVE1
+
+                curr_player = 0
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for t in tiles:
+                    if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
+                        1] - TILE_RADIUS <= mouse[1] <= t.POSITION[1] + TILE_RADIUS:
+                        if current_move == Move.MOVE1:
+                            if t.owner == Owner.BLACK and curr_player == 0:
+                                selected_tile = t
+                                selected_index = t.INDEX
+                                current_move = Move.MOVE2
+                                break
+                            elif t.owner == Owner.RED and curr_player == 1:
+                                selected_tile = t
+                                selected_index = t.INDEX
+                                current_move = Move.MOVE2
+                                break
+
+                        elif current_move == Move.MOVE2:
+                            if selected_tile == t:
+                                current_move = Move.MOVE1
+                                selected_index = -1
+                                break
+                            elif t.checkForMove(selected_tile.INDEX, tiles):
+                                if t.owner == Owner.NONE:
+                                    if curr_player == 0:
+                                        t.owner = Owner.BLACK
+                                    else:
+                                        t.owner = Owner.RED
+                                    selected_tile.owner = Owner.NONE
+                                    selected_index = -1
+                                    if t.checkForMill(tiles) and checkTakePossible(tiles, t.owner):
+                                        current_move = Move.TAKE
+                                        break
+                                    current_move = Move.MOVE1
+                                    if curr_player == 0:
+                                        curr_player = 1
+                                    else:
+                                        curr_player = 0
+
+
+                        elif current_move == Move.TAKE:
+                            if curr_player == 0:
+                                if t.owner == Owner.RED and not t.checkForMill(tiles):
+                                    t.owner = Owner.NONE
+                                    current_move = Move.MOVE1
+                                    red_tiles -= 1
+                                    curr_player = 1
+                                    break
+                            else:
+                                if t.owner == Owner.BLACK and not t.checkForMill(tiles):
+                                    t.owner = Owner.NONE
+                                    current_move = Move.MOVE1
+                                    black_tiles -= 1
+                                    curr_player = 0
+                                    break
+        if black_tiles < 3:
+            display_all(selected_index, "Lose")
+        elif red_tiles < 3:
+            display_all(selected_index, "Win")
+        else:
+            display_all(selected_index, "Phase II")
+            # Jeśli z komputerem to True, jeśli z graczem False
+            printGameStatus(curr_player, True)
+
+        pygame.display.update()
+        clock.tick(60)
+
+
 def test_phase2():
     global phase, black_tiles, red_tiles, tiles
     current_move = Move.MOVE1
@@ -324,7 +446,7 @@ def test_phase2():
         else:
             display_all(selected_index, "Phase II")
             # Jeśli z komputerem to True, jeśli z graczem False
-            printGameStatus(curr_player, True)
+            printGameStatus(curr_player, False)
 
         pygame.display.update()
         clock.tick(60)
@@ -424,6 +546,50 @@ def generate_possible_moves_phase1(_tiles, move, player):
     return possible_moves
 
 
+def evaluate_phase2(_tiles, player):
+    #print(player)
+    ai = Owner.RED
+    ai_mill_points = 250
+    player_mill_points = 300
+    ai_possible_mill_points = 60
+    player_possible_mill_points = 80
+
+    score = 0
+
+    for t in _tiles:
+        if t.checkForMill(_tiles) and t.owner == player:
+            if player == ai:
+                score += ai_mill_points
+            else:
+                score += player_mill_points
+
+        possible_mills = t.countPossibleMills(_tiles)
+        if possible_mills > 0 and t.owner == player:
+            if player == ai:
+                score += ai_possible_mill_points * possible_mills
+            else:
+                score += player_possible_mill_points * possible_mills
+
+    return score
+
+
+def generate_possible_moves_phase2(_tiles, move, player):
+    possible_moves = []
+    if move == Move.MOVE1:
+        for t in tiles:
+            if t.owner == player:
+                for n in t.NEIGHBORS:
+                    if _tiles[n].owner == Owner.NONE:
+                        possible_moves.append(TileMove(t.INDEX, n))
+    else:
+        for t in _tiles:
+            if t.owner != Owner.NONE and t.owner != player and not t.checkForMill(_tiles):
+                possible_moves.append(t.INDEX)
+        pass
+
+    return possible_moves
+
+
 # minimax with alpha-beta pruning
 def minimax_phase1(_tiles, depth, alpha, beta, move, maximizing):
     if depth == 0:
@@ -462,6 +628,60 @@ def minimax_phase1(_tiles, depth, alpha, beta, move, maximizing):
             eval = minimax_phase1(_tiles, depth - 1, alpha, beta, move, True)
             if move == Move.PLACE:
                 _tiles[m].owner = Owner.NONE
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.BLACK
+
+            min_eval = min(eval, min_eval)
+
+            beta = min(beta, eval)
+
+            if beta <= alpha:
+                break
+
+        return min_eval
+
+
+def minimax_phase2(_tiles, depth, alpha, beta, move, maximizing):
+    if depth == 0:
+        return evaluate_phase2(_tiles, (Owner.RED, Owner.BLACK)[maximizing])
+
+    if maximizing:
+        max_eval = -math.inf
+        moves = generate_possible_moves_phase2(_tiles, move, Owner.RED)
+        for m in moves:
+            if move == Move.MOVE1:
+                _tiles[m.frm].owner = Owner.NONE
+                _tiles[m.to].owner = Owner.RED
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.NONE
+            eval = -minimax_phase2(_tiles, depth - 1, alpha, beta, move, False)
+            if move == Move.MOVE1:
+                _tiles[m.frm].owner = Owner.RED
+                _tiles[m.to].owner = Owner.NONE
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.RED
+
+            max_eval = max(eval, max_eval)
+
+            alpha = max(alpha, eval)
+
+            if beta <= alpha:
+                break
+
+        return max_eval
+    else:
+        min_eval = math.inf
+        moves = generate_possible_moves_phase2(_tiles, move, Owner.BLACK)
+        for m in moves:
+            if move == Move.PLACE:
+                _tiles[m.frm].owner = Owner.NONE
+                _tiles[m.to].owner = Owner.BLACK
+            elif move == Move.TAKE:
+                _tiles[m].owner = Owner.NONE
+            eval = minimax_phase2(_tiles, depth - 1, alpha, beta, move, True)
+            if move == Move.PLACE:
+                _tiles[m.frm].owner = Owner.BLACK
+                _tiles[m.to].owner = Owner.NONE
             elif move == Move.TAKE:
                 _tiles[m].owner = Owner.BLACK
 
@@ -657,8 +877,6 @@ def printGameStatus(player, cpu):
         screen.blit(PLAYER_CPU, (SCREEN_WIDTH / 2 - 75, SCREEN_HEIGHT / 2 + 28))
 
 
-
-
 def startTheGamePVP():
     initiate()
     pvp_phase1()
@@ -668,7 +886,7 @@ def startTheGamePVP():
 def startTheGamePVE():
     initiate()
     pve_phase1()
-    test_phase2()
+    pve_phase2()
 
 
 def showMenu():
