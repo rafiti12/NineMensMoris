@@ -282,12 +282,12 @@ def pve_phase2():
                     if score > best_score:
                         best_score = score
                         best_move = m
-                print(best_score)
-                print(best_move)
+
                 if current_move == Move.MOVE1:
                     tiles[best_move.frm].owner = Owner.NONE
                     tiles[best_move.to].owner = Owner.RED
                 elif current_move == Move.TAKE:
+                    print(best_move)
                     tiles[best_move].owner = Owner.NONE
 
                 if current_move == Move.MOVE1:
@@ -547,7 +547,7 @@ def generate_possible_moves_phase1(_tiles, move, player):
 
 
 def evaluate_phase2(_tiles, player):
-    #print(player)
+    # print(player)
     ai = Owner.RED
     ai_mill_points = 250
     player_mill_points = 300
@@ -555,8 +555,23 @@ def evaluate_phase2(_tiles, player):
     player_possible_mill_points = 80
 
     score = 0
+    red = 0
+    black = 0
+    player_possible_mill_count = 0
+    ai_possible_mill_count = 0
+    movable_black = 0
+    movable_red = 0
 
     for t in _tiles:
+        if t.owner == Owner.RED:
+            red += 1
+            if t.canMove(_tiles):
+                movable_red += 1
+        elif t.owner == Owner.BLACK:
+            black += 1
+            if t.canMove(_tiles):
+                movable_black += 1
+
         if t.checkForMill(_tiles) and t.owner == player:
             if player == ai:
                 score += ai_mill_points
@@ -569,6 +584,15 @@ def evaluate_phase2(_tiles, player):
                 score += ai_possible_mill_points * possible_mills
             else:
                 score += player_possible_mill_points * possible_mills
+
+
+    if black <= 2 or movable_black == 0:
+        score = float('inf')
+    elif red <= 2:
+        score = float('-inf')
+    else:
+        score -= 25 * movable_black
+        score += 50 * (red - black)
 
     return score
 
@@ -865,7 +889,6 @@ def addNeighbors(i):
         t.append(22)
 
     return t
-
 
 def printGameStatus(player, cpu):
     global PLAYER0, PLAYER1, PLAYER_CPU

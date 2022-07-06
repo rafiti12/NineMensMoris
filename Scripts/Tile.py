@@ -36,3 +36,12 @@ class Tile:
             if n == index:
                 return True
         return False
+
+    def canMove(self, tiles):
+        directions = len(self.NEIGHBORS)
+        for n in self.NEIGHBORS:
+            if tiles[n].owner != Owner.NONE:
+                directions -= 1
+        if directions == 0:
+            return False
+        return True
