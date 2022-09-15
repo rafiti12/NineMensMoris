@@ -1,5 +1,6 @@
 from json import tool
 from constants import *
+from utility import countTiles
 
 
 class Tile:

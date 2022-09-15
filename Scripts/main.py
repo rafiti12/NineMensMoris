@@ -3,6 +3,7 @@ import pygame_menu
 
 from constants import *
 from Tile import Tile
+from utility import countTiles, Evaluation
 import math
 import copy
 
@@ -98,9 +99,9 @@ def pve_phase1():
                     showMenu()
 
             if curr_player == 1:
-                temp_tiles = None
                 temp_tiles = copy.deepcopy(tiles)
                 best_score = -math.inf
+                best_move = None
                 moves = generate_possible_moves_phase1(tiles, current_move, Owner.RED)
 
                 for m in moves:
@@ -246,7 +247,7 @@ def pvp_phase1():
 
 
 def pve_phase2():
-    global phase, black_tiles, red_tiles, tiles
+    global phase, black_tiles, red_tiles, tiles, best_move, prev_move
     current_move = Move.MOVE1
     curr_player = 0
     selected_index = -1
@@ -266,32 +267,26 @@ def pve_phase2():
             if curr_player == 1:
                 temp_tiles = copy.deepcopy(tiles)
                 best_score = -math.inf
-                moves = generate_possible_moves_phase2(tiles, current_move, Owner.RED)
-                for m in moves:
-                    if current_move == Move.MOVE1:
-                        temp_tiles[m.frm].owner = Owner.NONE
-                        temp_tiles[m.to].owner = Owner.RED
-                    elif current_move == Move.TAKE:
-                        temp_tiles[m].owner = Owner.NONE
-                    score = -minimax_phase2(temp_tiles, 4, -math.inf, math.inf, current_move, True)
-                    if current_move == Move.MOVE1:
-                        temp_tiles[m.frm].owner = Owner.RED
-                        temp_tiles[m.to].owner = Owner.NONE
-                    elif current_move == Move.TAKE:
-                        temp_tiles[m].owner = Owner.RED
-                    if score > best_score:
-                        best_score = score
-                        best_move = m
+                best_move = None
+                print("---Minmax start---")
+                bestEval = minimax_phase2(temp_tiles, 3, -math.inf, math.inf, current_move, False)
+                print(f"Best move: {bestEval.move} | {bestEval.score}")
+                print("---Minmax end---")
+                if bestEval.score == math.inf:
+                    red_tiles -= 1
+                    break
+                if bestEval.score == -math.inf:
+                    black_tiles -= 1
+                    break
 
                 if current_move == Move.MOVE1:
-                    tiles[best_move.frm].owner = Owner.NONE
-                    tiles[best_move.to].owner = Owner.RED
+                    tiles[bestEval.move.frm].owner = Owner.NONE
+                    tiles[bestEval.move.to].owner = Owner.RED
                 elif current_move == Move.TAKE:
-                    print(best_move)
-                    tiles[best_move].owner = Owner.NONE
+                    tiles[bestEval.move].owner = Owner.NONE
 
                 if current_move == Move.MOVE1:
-                    if tiles[best_move[1]].checkForMill(tiles) and checkTakePossible(tiles, Owner.RED):
+                    if tiles[bestEval.move.to].checkForMill(tiles) and checkTakePossible(tiles, Owner.RED):
                         current_move = Move.TAKE
                         break
                 elif current_move == Move.TAKE:
@@ -304,6 +299,7 @@ def pve_phase2():
                 for t in tiles:
                     if t.POSITION[0] - TILE_RADIUS <= mouse[0] <= t.POSITION[0] + TILE_RADIUS and t.POSITION[
                         1] - TILE_RADIUS <= mouse[1] <= t.POSITION[1] + TILE_RADIUS:
+                        print(f"Tile Index: {t.INDEX}")
                         if current_move == Move.MOVE1:
                             if t.owner == Owner.BLACK and curr_player == 0:
                                 selected_tile = t
@@ -317,8 +313,8 @@ def pve_phase2():
                                 break
 
                         elif current_move == Move.MOVE2:
+                            current_move = Move.MOVE1
                             if selected_tile == t:
-                                current_move = Move.MOVE1
                                 selected_index = -1
                                 break
                             elif t.checkForMove(selected_tile.INDEX, tiles):
@@ -332,7 +328,6 @@ def pve_phase2():
                                     if t.checkForMill(tiles) and checkTakePossible(tiles, t.owner):
                                         current_move = Move.TAKE
                                         break
-                                    current_move = Move.MOVE1
                                     if curr_player == 0:
                                         curr_player = 1
                                     else:
@@ -340,24 +335,25 @@ def pve_phase2():
 
 
                         elif current_move == Move.TAKE:
+                            current_move = Move.MOVE1
                             if curr_player == 0:
                                 if t.owner == Owner.RED and not t.checkForMill(tiles):
                                     t.owner = Owner.NONE
-                                    current_move = Move.MOVE1
                                     red_tiles -= 1
                                     curr_player = 1
                                     break
                             else:
                                 if t.owner == Owner.BLACK and not t.checkForMill(tiles):
                                     t.owner = Owner.NONE
-                                    current_move = Move.MOVE1
                                     black_tiles -= 1
                                     curr_player = 0
                                     break
         if black_tiles < 3:
             display_all(selected_index, "Lose")
+            break
         elif red_tiles < 3:
             display_all(selected_index, "Win")
+            break
         else:
             display_all(selected_index, "Phase II")
             # Jeśli z komputerem to True, jeśli z graczem False
@@ -367,7 +363,7 @@ def pve_phase2():
         clock.tick(60)
 
 
-def test_phase2():
+def pvp_phase2():
     global phase, black_tiles, red_tiles, tiles
     current_move = Move.MOVE1
     curr_player = 0
@@ -501,16 +497,7 @@ def evaluate_phase1(_tiles, player):
 
     score = 0
 
-    # red = 0
-    # black = 0
-
     for t in _tiles:
-        #     if t.owner == Owner.RED:
-        #         red += 1
-        #     else:
-        #         black += 1
-
-        # return  black - red
         if t.checkForMill(_tiles) and t.owner == player:
             if player == ai:
                 score += ai_mill_points
@@ -546,61 +533,30 @@ def generate_possible_moves_phase1(_tiles, move, player):
     return possible_moves
 
 
-def evaluate_phase2(_tiles, player):
-    # print(player)
-    ai = Owner.RED
-    ai_mill_points = 250
-    player_mill_points = 300
-    ai_possible_mill_points = 60
-    player_possible_mill_points = 80
-
+def evaluate_phase2(_tiles, player=None):
+    global red_tiles
+    p1_tiles = countTiles(_tiles, Owner.BLACK)
+    p2_tiles = countTiles(_tiles, Owner.RED)
+    possible_millis = 0
     score = 0
-    red = 0
-    black = 0
-    player_possible_mill_count = 0
-    ai_possible_mill_count = 0
-    movable_black = 0
-    movable_red = 0
+    for tile in _tiles:
+        if tile.owner == Owner.BLACK:
+            possible_millis += tile.countPossibleMills(_tiles)
+            #for t in tile.NEIGHBORS:
 
-    for t in _tiles:
-        if t.owner == Owner.RED:
-            red += 1
-            if t.canMove(_tiles):
-                movable_red += 1
-        elif t.owner == Owner.BLACK:
-            black += 1
-            if t.canMove(_tiles):
-                movable_black += 1
-
-        if t.checkForMill(_tiles) and t.owner == player:
-            if player == ai:
-                score += ai_mill_points
-            else:
-                score += player_mill_points
-
-        possible_mills = t.countPossibleMills(_tiles)
-        if possible_mills > 0 and t.owner == player:
-            if player == ai:
-                score += ai_possible_mill_points * possible_mills
-            else:
-                score += player_possible_mill_points * possible_mills
-
-
-    if black <= 2 or movable_black == 0:
-        score = float('inf')
-    elif red <= 2:
-        score = float('-inf')
-    else:
-        score -= 25 * movable_black
-        score += 50 * (red - black)
-
+    if p1_tiles <= 2:
+        return -math.inf
+    if p2_tiles <= 2:
+        return math.inf
+    score += possible_millis * 100
+    score += 200 * (p1_tiles - p2_tiles)
     return score
 
 
 def generate_possible_moves_phase2(_tiles, move, player):
     possible_moves = []
     if move == Move.MOVE1:
-        for t in tiles:
+        for t in _tiles:
             if t.owner == player:
                 for n in t.NEIGHBORS:
                     if _tiles[n].owner == Owner.NONE:
@@ -612,6 +568,16 @@ def generate_possible_moves_phase2(_tiles, move, player):
         pass
 
     return possible_moves
+
+
+def generate_inverted_board(_tiles):
+    iv = copy.deepcopy(tiles)
+    for tile in iv:
+        if tile.owner == Owner.RED:
+            tile.owner = Owner.BLACK
+        elif tile.owner == Owner.BLACK:
+            tile.owner = Owner.RED
+    return iv
 
 
 # minimax with alpha-beta pruning
@@ -666,57 +632,90 @@ def minimax_phase1(_tiles, depth, alpha, beta, move, maximizing):
 
 
 def minimax_phase2(_tiles, depth, alpha, beta, move, maximizing):
+    finalEval = Evaluation()
+    currentEval = Evaluation()
     if depth == 0:
-        return evaluate_phase2(_tiles, (Owner.RED, Owner.BLACK)[maximizing])
+        #print(f"Tiles count red: {countTiles(_tiles, Owner.RED)} black: {countTiles(_tiles, Owner.BLACK)}")
+        if maximizing:
+            finalEval.score = evaluate_phase2(_tiles)
+        else:
+            finalEval.score = evaluate_phase2(generate_inverted_board(_tiles))
+        print(finalEval.score)
+        return finalEval
 
     if maximizing:
-        max_eval = -math.inf
-        moves = generate_possible_moves_phase2(_tiles, move, Owner.RED)
+        currentEval.score = -math.inf
+        moves = generate_possible_moves_phase2(_tiles, move, Owner.BLACK)
         for m in moves:
+            enemy = -1
             if move == Move.MOVE1:
                 _tiles[m.frm].owner = Owner.NONE
-                _tiles[m.to].owner = Owner.RED
+                _tiles[m.to].owner = Owner.BLACK
+                if _tiles[m.to].checkForMill(_tiles) and checkTakePossible(_tiles, Owner.BLACK):
+                    #usuwamy jeden pionek przeciwnika
+                    for t in _tiles:
+                        if t.owner == Owner.RED:
+                            enemy = t.INDEX
+                    _tiles[enemy].owner = Owner.NONE
             elif move == Move.TAKE:
                 _tiles[m].owner = Owner.NONE
-            eval = -minimax_phase2(_tiles, depth - 1, alpha, beta, move, False)
+            currentEval = minimax_phase2(_tiles, depth - 1, alpha, beta, move, False)
             if move == Move.MOVE1:
-                _tiles[m.frm].owner = Owner.RED
+                if enemy != -1:
+                    _tiles[enemy].owner = Owner.RED
+                _tiles[m.frm].owner = Owner.BLACK
                 _tiles[m.to].owner = Owner.NONE
             elif move == Move.TAKE:
                 _tiles[m].owner = Owner.RED
 
-            max_eval = max(eval, max_eval)
-
-            alpha = max(alpha, eval)
+            if move == Move.MOVE1:
+                print(f"Move from {m.frm} to {m.to}, score {currentEval.score}")
+            if currentEval.score > alpha:
+                finalEval.move = m
+                alpha = currentEval.score
 
             if beta <= alpha:
                 break
 
-        return max_eval
+        finalEval.score = alpha
     else:
-        min_eval = math.inf
-        moves = generate_possible_moves_phase2(_tiles, move, Owner.BLACK)
+        currentEval = math.inf
+        moves = generate_possible_moves_phase2(_tiles, move, Owner.RED)
         for m in moves:
-            if move == Move.PLACE:
+            enemy = -1
+            if move == Move.MOVE1:
                 _tiles[m.frm].owner = Owner.NONE
-                _tiles[m.to].owner = Owner.BLACK
+                _tiles[m.to].owner = Owner.RED
+                if _tiles[m.to].checkForMill(_tiles) and checkTakePossible(_tiles, Owner.RED):
+                    # usuwamy jeden pionek przeciwnika
+                    for t in _tiles:
+                        if t.owner == Owner.BLACK:
+                            enemy = t.INDEX
+                    _tiles[enemy].owner = Owner.NONE
             elif move == Move.TAKE:
                 _tiles[m].owner = Owner.NONE
-            eval = minimax_phase2(_tiles, depth - 1, alpha, beta, move, True)
-            if move == Move.PLACE:
-                _tiles[m.frm].owner = Owner.BLACK
+            currentEval = minimax_phase2(_tiles, depth - 1, alpha, beta, move, True)
+            if move == Move.MOVE1:
+                if enemy != -1:
+                    _tiles[enemy].owner = Owner.BLACK
+                _tiles[m.frm].owner = Owner.RED
                 _tiles[m.to].owner = Owner.NONE
             elif move == Move.TAKE:
                 _tiles[m].owner = Owner.BLACK
 
-            min_eval = min(eval, min_eval)
+            if move == Move.MOVE1:
+                print(f"Move from {m.frm} to {m.to}, score {currentEval.score}")
 
-            beta = min(beta, eval)
+            if currentEval.score < beta:
+                finalEval.move = m
+                beta = currentEval.score
 
             if beta <= alpha:
                 break
 
-        return min_eval
+        finalEval.score = beta
+
+    return finalEval
 
 
 def addMills(i):
@@ -890,6 +889,7 @@ def addNeighbors(i):
 
     return t
 
+
 def printGameStatus(player, cpu):
     global PLAYER0, PLAYER1, PLAYER_CPU
     if player == 0:
@@ -903,7 +903,7 @@ def printGameStatus(player, cpu):
 def startTheGamePVP():
     initiate()
     pvp_phase1()
-    test_phase2()
+    pvp_phase2()
 
 
 def startTheGamePVE():
